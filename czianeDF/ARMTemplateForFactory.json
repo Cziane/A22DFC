@@ -1,0 +1,398 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "czianeDF"
+		},
+		"CzianeStorageAccount_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'CzianeStorageAccount'"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/Json2Csv')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "RestaurantsJSON2CSV",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['restaurant_id']"
+										},
+										"sink": {
+											"name": "ID"
+										}
+									},
+									{
+										"source": {
+											"path": "$['name']"
+										},
+										"sink": {
+											"name": "name"
+										}
+									},
+									{
+										"source": {
+											"path": "$['borough']"
+										},
+										"sink": {
+											"name": "borough"
+										}
+									},
+									{
+										"source": {
+											"path": "$['cuisine']"
+										},
+										"sink": {
+											"name": "cuisine"
+										}
+									},
+									{
+										"source": {
+											"path": "$['address']['building']"
+										},
+										"sink": {
+											"name": "building"
+										}
+									},
+									{
+										"source": {
+											"path": "$['address']['street']"
+										},
+										"sink": {
+											"name": "street"
+										}
+									},
+									{
+										"source": {
+											"path": "$['address']['zipcode']"
+										},
+										"sink": {
+											"name": "zipcode"
+										}
+									},
+									{
+										"source": {
+											"path": "$['address']['coord'][0]"
+										},
+										"sink": {
+											"name": "lat"
+										}
+									},
+									{
+										"source": {
+											"path": "$['address']['coord'][1]"
+										},
+										"sink": {
+											"name": "long"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "RestaurantsJson",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "RestaurantsCSV",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "GradesJson2Csv",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "Json2CsvDF",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"RestaurantJson": {},
+									"GradeCsv": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/RestaurantsJson')]",
+				"[concat(variables('factoryId'), '/datasets/RestaurantsCSV')]",
+				"[concat(variables('factoryId'), '/dataflows/Json2CsvDF')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/RestaurantsCSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "CzianeStorageAccount",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "restaurants.csv",
+						"folderPath": "output",
+						"container": "restaurants"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/CzianeStorageAccount')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/RestaurantsJson')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "CzianeStorageAccount",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "restaurants.json",
+						"folderPath": "source",
+						"container": "restaurants"
+					}
+				},
+				"schema": {
+					"type": "object",
+					"properties": {
+						"address": {
+							"type": "object",
+							"properties": {
+								"building": {
+									"type": "string"
+								},
+								"coord": {
+									"type": "array",
+									"items": {
+										"type": "number"
+									}
+								},
+								"street": {
+									"type": "string"
+								},
+								"zipcode": {
+									"type": "string"
+								}
+							}
+						},
+						"borough": {
+							"type": "string"
+						},
+						"cuisine": {
+							"type": "string"
+						},
+						"grades": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"date": {
+										"type": "object",
+										"properties": {
+											"$date": {
+												"type": "integer"
+											}
+										}
+									},
+									"grade": {
+										"type": "string"
+									},
+									"score": {
+										"type": "integer"
+									}
+								}
+							}
+						},
+						"name": {
+							"type": "string"
+						},
+						"restaurant_id": {
+							"type": "string"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/CzianeStorageAccount')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CzianeStorageAccount')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('CzianeStorageAccount_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Json2CsvDF')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "RestaurantsJson",
+								"type": "DatasetReference"
+							},
+							"name": "RestaurantJson"
+						}
+					],
+					"sinks": [
+						{
+							"linkedService": {
+								"referenceName": "CzianeStorageAccount",
+								"type": "LinkedServiceReference"
+							},
+							"name": "GradeCsv"
+						}
+					],
+					"transformations": [
+						{
+							"name": "GradesLines"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          address as (building as string, coord as double[], street as string, zipcode as string),",
+						"          borough as string,",
+						"          cuisine as string,",
+						"          grades as (date as ({$date} as integer), grade as string, score as integer)[],",
+						"          name as string,",
+						"          restaurant_id as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     documentForm: 'documentPerLine') ~> RestaurantJson",
+						"RestaurantJson foldDown(unroll(grades, grades),",
+						"     mapColumn(",
+						"          grade = grades.grade,",
+						"          score = grades.score,",
+						"          restaurant_id",
+						"     ),",
+						"     skipDuplicateMapInputs: false,",
+						"     skipDuplicateMapOutputs: false) ~> GradesLines",
+						"GradesLines sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'delimited',",
+						"     container: 'restaurants',",
+						"     folderPath: 'output',",
+						"     columnDelimiter: ',',",
+						"     escapeChar: '\\\\',",
+						"     quoteChar: '\\\"',",
+						"     columnNamesAsHeader: false,",
+						"     rowUrlColumn:'restaurant_id',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     mapColumn(",
+						"          Grade = grade,",
+						"          Score = score",
+						"     )) ~> GradeCsv"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/RestaurantsJson')]",
+				"[concat(variables('factoryId'), '/linkedServices/CzianeStorageAccount')]"
+			]
+		}
+	]
+}
