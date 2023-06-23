@@ -1,0 +1,78 @@
+{
+	"name": "RestaurantsJson",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "CzianeStorageAccount",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "restaurants.json",
+				"folderPath": "source",
+				"container": "restaurants"
+			}
+		},
+		"schema": {
+			"type": "object",
+			"properties": {
+				"address": {
+					"type": "object",
+					"properties": {
+						"building": {
+							"type": "string"
+						},
+						"coord": {
+							"type": "array",
+							"items": {
+								"type": "number"
+							}
+						},
+						"street": {
+							"type": "string"
+						},
+						"zipcode": {
+							"type": "string"
+						}
+					}
+				},
+				"borough": {
+					"type": "string"
+				},
+				"cuisine": {
+					"type": "string"
+				},
+				"grades": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"date": {
+								"type": "object",
+								"properties": {
+									"$date": {
+										"type": "integer"
+									}
+								}
+							},
+							"grade": {
+								"type": "string"
+							},
+							"score": {
+								"type": "integer"
+							}
+						}
+					}
+				},
+				"name": {
+					"type": "string"
+				},
+				"restaurant_id": {
+					"type": "string"
+				}
+			}
+		}
+	}
+}

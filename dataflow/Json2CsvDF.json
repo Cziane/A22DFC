@@ -1,0 +1,69 @@
+{
+	"name": "Json2CsvDF",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "RestaurantsJson",
+						"type": "DatasetReference"
+					},
+					"name": "RestaurantJson"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "CzianeStorageAccount",
+						"type": "LinkedServiceReference"
+					},
+					"name": "GradeCsv"
+				}
+			],
+			"transformations": [
+				{
+					"name": "GradesLines"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          address as (building as string, coord as double[], street as string, zipcode as string),",
+				"          borough as string,",
+				"          cuisine as string,",
+				"          grades as (date as ({$date} as integer), grade as string, score as integer)[],",
+				"          name as string,",
+				"          restaurant_id as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'documentPerLine') ~> RestaurantJson",
+				"RestaurantJson foldDown(unroll(grades, grades),",
+				"     mapColumn(",
+				"          grade = grades.grade,",
+				"          score = grades.score,",
+				"          restaurant_id",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> GradesLines",
+				"GradesLines sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delimited',",
+				"     container: 'restaurants',",
+				"     folderPath: 'output',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: false,",
+				"     rowUrlColumn:'restaurant_id',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          Grade = grade,",
+				"          Score = score",
+				"     )) ~> GradeCsv"
+			]
+		}
+	}
+}

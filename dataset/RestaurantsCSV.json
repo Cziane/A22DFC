@@ -1,0 +1,24 @@
+{
+	"name": "RestaurantsCSV",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "CzianeStorageAccount",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "restaurants.csv",
+				"folderPath": "output",
+				"container": "restaurants"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	}
+}
